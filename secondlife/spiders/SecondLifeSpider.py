@@ -14,23 +14,43 @@ from secondlife.Places import Places
 
 class SecondLifeSpider(CrawlSpider):
     # name of spider
-    name = 'Second Life Spider'
+    name = 'SecondLifeSpider'
     allowed_domains = ["secondlife.com"]
-    start_urls = ["http://secondlife.com/destinations/"]
+    start_urls = ["http://secondlife.com/destinations"]
     
     # rules for extracting links and contents
     rules = (# rule for pattern A
-             Rule(SgmlLinkExtractor(allow = ('destinations\/?'), deny = ('destinations\/.'), callback = 'parseAType')),
+            Rule(SgmlLinkExtractor(allow = ('destinations\/?'), deny = ('destinations\/.'))),
              # rule for pattern B
-             Rule(SgmlLinkExtractor(allow = ('destinations\/.+\/?'), deny = ('destinations\/.+\/.'), callback = 'parseBType')),
-             # rule for pattern C
-             Rule(SgmlLinkExtractor(allow = ('destinations\/.+\/.+\/?'), deny = ('destinations\/.+\/.+\/.'), callback = 'parseCType')),
-             # rule for pattern D
-             Rule(SgmlLinkExtractor(allow = ('destinations\/.+\/[0-9]\/?'), callback = 'parseDEType')),
-             # rule for pattern E
-             Rule(SgmlLinkExtractor(allow = ('destinations\/.+\/.+\/[0-9]\/?'), callback = 'parseDEType')),
-             # rule for pattern F
-             Rule(SgmlLinkExtractor(allow = ('destination\/.+'), callback = 'parseEType')))
+            Rule(SgmlLinkExtractor(allow = ('destinations\/.+\/?'), deny = ('destinations\/.+\/.')), callback = 'parseBType'),
+            )    
+    def parse_start_url(self, response):
+        # CASE 1: the category doesn't have subcategories  --> extract and follow d,e
+        sel = Selector(response)
+        domain = 'http://secondlife.com'
+        requestList = []
+        
+        # try to extract d, e
+        destList = sel.xpath('//div[@class="dg-catterm-list-desc"]/h3/a/@href').extract()
+        if (len(destList) > 0):
+            for destPath in destList:
+                request = Request(url = domain + destPath, callback = self.parseFType)
+                requestList.append(request)
+            
+            # extract pagers if any (d)
+            pages = sel.xpath('//span[@class="qp_counter"]')[0].xpath('a/@href').extract()
+            for page in pages:
+                request = Request(url = domain + page, callback = 'parseDEType')
+                requestList.append(request)
+        # CASE 2: the category has subcategories    --> extract and follow c
+        else:
+            subList = sel.xpath('//div[@class="dg-cat-wsub-cat-head"]/h2/a/@href').extract()
+            if (len(subList) > 0):
+                for sub in subList:
+                    request = Request(url = domain + sub, callback = 'parseCType')
+                    requestList.append(request)
+            
+        return requestList
     
     # parser for pattern a
     def parseAType(self, response):
@@ -58,20 +78,20 @@ class SecondLifeSpider(CrawlSpider):
         destList = sel.xpath('//div[@class="dg-catterm-list-desc"]/h3/a/@href').extract()
         if (len(destList) > 0):
             for destPath in destList:
-                request = Request(url = domain + destPath)
+                request = Request(url = domain + destPath, callback = 'parseFType')
                 requestList.append(request)
             
             # extract pagers if any (d)
             pages = sel.xpath('//span[@class="qp_counter"]')[0].xpath('a/@href').extract()
             for page in pages:
-                request = Request(url = domain + page)
+                request = Request(url = domain + page, callback = 'parseDEType')
                 requestList.append(request)
         # CASE 2: the category has subcategories    --> extract and follow c
         else:
             subList = sel.xpath('//div[@class="dg-cat-wsub-cat-head"]/h2/a/@href').extract()
             if (len(subList) > 0):
                 for sub in subList:
-                    request = Request(url = domain + sub)
+                    request = Request(url = domain + sub, callback = 'parseCType')
                     requestList.append(request)
             
         return requestList
@@ -113,7 +133,7 @@ class SecondLifeSpider(CrawlSpider):
         return requestList
     
     # parser for pattern f
-    def parseEType(self, response):
+    def parseFType(self, response):
         # extract data
         sel = Selector(response)
         region = Places()
@@ -134,9 +154,9 @@ class SecondLifeSpider(CrawlSpider):
         
         # descriptions
         descriptions = sel.xpath('//div[@id="dg-entry"]/p/text()')[1].extract()
-        region['description'] = descriptions
+        region['descriptions'] = descriptions
         
         # likeNum
-        region['likeNum'] = 0
+        region['likesNum'] = 0
         
         return region

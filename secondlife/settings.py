@@ -19,8 +19,8 @@ ITEM_PIPELINES = {
 # settings for feed exporters
 # FEED_URI = 'file:///F:/Dropbox/research/SecondLife/projects/secondlife/data/%(name)s_%(time)s.json'
 # FEED_URI = 'file:///C:/Users/MrICE/Dropbox/research/SecondLife/projects/secondlife/data/%(name)s_%(time)s.json'
-FEED_URI = 'file:///F:/Dropbox/research/SecondLife/projects/secondlife/data/%(name)s_%(time)s.csv'
-# FEED_URI = 'file:///C:/Users/MrICE/Dropbox/research/SecondLife/projects/secondlife/data/%(name)s_%(time)s.csv'
+# FEED_URI = 'file:///F:/Dropbox/research/SecondLife/projects/secondlife/data/%(name)s_%(time)s.csv'
+FEED_URI = 'file:///C:/Users/MrICE/Dropbox/research/SecondLife/projects/secondlife/data/%(name)s_%(time)s.csv'
 # FEED_FORMAT = 'json'
 FEED_FORMAT = 'csv'
 FEED_STORAGES = {'file': 'scrapy.contrib.feedexport.FileFeedStorage'}
@@ -28,8 +28,8 @@ FEED_EXPORTERS = {'json': 'scrapy.contrib.exporter.JsonItemExporter',
                   'csv': 'scrapy.contrib.exporter.CsvItemExporter',}
 
 # some sane limits by default (override if needed)
-CLOSESPIDER_PAGECOUNT = 1000
-CLOSESPIDER_TIMEOUT = 3600
+# CLOSESPIDER_PAGECOUNT = 2000
+# CLOSESPIDER_TIMEOUT = 3600
 
 RETRY_ENABLED = False
 COOKIES_ENABLED = False

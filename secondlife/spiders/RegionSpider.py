@@ -26,12 +26,32 @@ class RegionSpider(CrawlSpider):
              )
     
     def parse_start_url(self, response):
-        # CASE 1: the category doesn't have subcategories  --> extract and follow d,e
+        sel = Selector(response)
+        domain = 'http://secondlife.com'
+        # extract b
+        categoriesLinks = sel.xpath('//ul[@class="menu_sidebar2"]/li/a/@href').extract()
+        
+        # generate requests to follow b
+        categoriesRequests = []
+        for branch in categoriesLinks:
+            request = Request(url = domain + branch, callback = self.parseBType)
+            categoriesRequests.append(request)
+            
+        return categoriesRequests
+    
+    def parseBType(self, response):
         sel = Selector(response)
         domain = 'http://secondlife.com'
         requestList = []
         
-        # extract pagers if any (d)
+        # CASE 1: the category doesn't have subcategories  --> extract and follow d,f
+        # extract f
+        destList = sel.xpath('//div[@class="dg-catterm-list-desc"]/h3/a/@href').extract()
+        for destPath in destList:
+            request = Request(url = domain + destPath, callback = self.parseItems)
+            requestList.append(request)
+                
+        # extract d if any
         pages = sel.xpath('//span[@class="qp_counter"]')
         if (len(pages) > 0):
             pages = pages[0].xpath('a/@href').extract()
@@ -51,11 +71,13 @@ class RegionSpider(CrawlSpider):
     
     # parser for pattern c
     def parseCType(self, response):
+#         from scrapy.shell import inspect_response
+#         inspect_response(response)
         sel = Selector(response)
         domain = 'http://secondlife.com'
         requestList = []
         
-        # extract d,e
+        # extract f
         destList = sel.xpath('//div[@class="dg-catterm-list-desc"]/h3/a/@href').extract()
         if (len(destList) > 0):
             for destPath in destList:
@@ -80,10 +102,9 @@ class RegionSpider(CrawlSpider):
         
         # extract f
         destList = sel.xpath('//div[@class="dg-catterm-list-desc"]/h3/a/@href').extract()
-        if (len(destList) > 0):
-            for destPath in destList:
-                request = Request(url = domain + destPath, callback = self.parseItems)
-                requestList.append(request)
+        for destPath in destList:
+            request = Request(url = domain + destPath, callback = self.parseItems)
+            requestList.append(request)
             
         return requestList
     
